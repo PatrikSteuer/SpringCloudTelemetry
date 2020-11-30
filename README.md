@@ -30,3 +30,15 @@ Since this project uses 3 services that communicate with each other, it is best 
 Once up and running, you can create a person by posting it to `service-a`. The person will be propagated (replicated) into `service-b` from where it will be propagated to `service-c`.
 
 As a result, you will see log output in all 3 services, and also in your [local Mongo Express](http://localhost:8081/db/test/) in the `test` database.
+
+# Metrics
+
+```
+docker exec -it scripts_influxdb_1 influx
+show databases
+```
+
+# References
+
+* [Influx DB, Chronograf and Grafana using Docker Compose](https://github.com/jkehres/docker-compose-influxdb-grafana)
+* [Spring Boot Metrics with Influx DB](https://medium.com/@rohansaraf/monitoring-in-springboot-2-0-micrometer-influxdb-chronograf-d049698bfa33)
