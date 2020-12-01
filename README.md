@@ -69,6 +69,8 @@ As a result, you will see the following:
 2. If you log on to your [local Mongo Express](http://localhost:8081/db/test/) in the `test` database you will see 3 collections have been created. Each one is holding the `Person` representation of its respective service.
 3. If you log on to your [local Zipkin](http://localhost:9411) instance, you will be able to see the traces. All you need to do is press the *Run  Query* button, and you will see traces of requests between the services. Click on any of them, to drill down deeper!
 
+![zipkin](./.documentation/zipkin.png)
+
 Furthermore, you will be able to see metrics, which is explained in the next section.
 
 # Metrics
