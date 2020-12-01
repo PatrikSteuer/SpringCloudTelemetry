@@ -1,7 +1,21 @@
 # SpringCloudTelemetry
 
 A repository showing Spring Cloud capabilities for Cloud Telemetry.
-This includes
+
+   * [Building the Project](#building-the-project)
+   * [Running the Project](#running-the-project)
+   * [Tracing](#tracing)
+   * [Metrics](#metrics)
+      * [Inspecting Influx DB](#inspecting-influx-db)
+      * [Using Chronograf &amp; Grafana](#using-chronograf--grafana)
+         * [Chronograf](#chronograf)
+         * [Grafana](#grafana)
+   * [Spring Boot Configurations](#spring-boot-configurations)
+      * [... for Tracing](#-for-tracing)
+      * [... for Metrics](#-for-metrics)
+   * [References](#references)
+
+The repository includes:
 
 * Tracing - using [Spring Cloud Sleuth](https://spring.io/projects/spring-cloud-sleuth) and [Zipkin.io](https://zipkin.io/), but other backends (like Jaeger) are possible, too.
 * Metrics - using [Micrometer.io](https://micrometer.io/docs) and [InfluxDB](https://www.influxdata.com/) ass metrics backend.
@@ -195,7 +209,7 @@ And see how the chart updates.
 ![grafana-dashboard](./.documentation/grafana-dashboard.png)
 
 # Spring Boot Configurations
-# ... for Tracing
+## ... for Tracing
 
 For tracing, all you need is the following dependencies in your `pom.xml`:
 
@@ -227,7 +241,7 @@ spring:
         probability: 0.1 # set this to 1.0 only for testing / debugging!
 ```
 Using the `spring.clound.sleuth` configurations you can also specify the URI for the Zipkin or other tracing backends.
-# ... for Metrics
+## ... for Metrics
 
 For metrics, all you need is the following dependencies in your `pom.xml`:
 
