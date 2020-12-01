@@ -264,6 +264,8 @@ Then in your `application.yaml`, you need to configure the tracing sample rate:
 ```yaml
 management:
   metrics:
+    tags:
+      service: ${spring.application.name}
     export:
       influx:
         auto-create-db: true
@@ -279,6 +281,8 @@ The `step` property is used to tell Spring Boot in which interval new metrics in
 
 The `username` and `password` are the credentials used to authenticate to InfluxDB.
 
+Also note the `management.metrics.tags` property map. Here you can define additional tags that will be added to the metrics that are being produced. In our case, we add a `service` tag which holds the name of the service (Spring Boot application name) that created the metrics. That allows us to filter in Chronograf or Grafana by the service instances. 
+
 There are many more settings that are noteworthy. For details, please consult the [Actuator Metrics documeentation](https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-metrics)
 # References
 
@@ -287,3 +291,4 @@ There are many more settings that are noteworthy. For details, please consult th
 * [Spring Boot Metrics with Influx DB](https://medium.com/@rohansaraf/monitoring-in-springboot-2-0-micrometer-influxdb-chronograf-d049698bfa33)
 * [Monitoring Spring Boot Application With Micrometer, Prometheus And Grafana Using Custom Metrics](https://www.mokkapps.de/blog/monitoring-spring-boot-application-with-micrometer-prometheus-and-grafana-using-custom-metrics/)
 * [A quick guide to micrometer](https://www.baeldung.com/micrometer)
+* [Spring Boot Actuator - Metrics](https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-metrics)

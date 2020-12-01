@@ -8,6 +8,8 @@ info: # /actuator/info
 
 management:
   metrics:
+    tags:
+      service: ${spring.application.name} # Additional, custom tag to allow filtering by service (instance)
     export:
       influx:
         auto-create-db: true
