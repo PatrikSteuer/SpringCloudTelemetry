@@ -1,11 +1,10 @@
 server.port: 8001
 
-
 # Actuator Endpoint Configurations
 info: # /actuator/info
   app:
     name: ${spring.application.name}
-    
+
 management:
   metrics:
     tags:

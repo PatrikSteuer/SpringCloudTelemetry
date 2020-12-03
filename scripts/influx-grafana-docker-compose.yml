@@ -41,6 +41,30 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
 
+  rsyslog:
+    image: rsyslog/syslog_appliance_alpine
+    ports:
+      - "6514:514/tcp"
+      - "6514:514/udp"
+    volumes:
+      - ./rsyslog/config:/config
+      - ./rsyslog/log:/logs
+    depends_on:
+      - influxdb
+      - telegraf
+    restart: always
+  
+  telegraf:
+    image: telegraf
+    ports:
+      - "7777:7777/tcp"
+    volumes:
+      # - ./rsyslog/rsyslog.conf:/etc/rsyslog.conf # uncomment if you want to configure rsyslog inside the container with a file outside of the container.
+      - ./telegraf/config/telegraf.conf:/etc/telegraf/telegraf.conf
+    depends_on:
+      - influxdb
+    restart: always
+
 # Use these volumes and uncomment the volumes above,
 # if you want data to persist beyond the shutdown and 
 # restart of the services.

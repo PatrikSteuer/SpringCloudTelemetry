@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
+
+    <!-- 
+    <property name="LOG_FILE" value="spring.log"/>
+    <include resource="org/springframework/boot/logging/logback/file-appender.xml" />
+    -->
+    
+    <appender name="RSYSLOG" class="ch.qos.logback.classic.net.SyslogAppender">
+        <syslogHost>127.0.0.1</syslogHost>
+        <port>6514</port>
+        <facility>LOCAL0</facility> <!-- See: https://en.wikipedia.org/wiki/Syslog#Facility -->
+        <suffixPattern>%thread: %-5level %logger{36} - %msg%n</suffixPattern>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="RSYSLOG"/>
+    </root>
+</configuration>
