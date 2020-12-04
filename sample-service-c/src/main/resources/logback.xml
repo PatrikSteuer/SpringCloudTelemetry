@@ -13,7 +13,7 @@
         <syslogHost>127.0.0.1</syslogHost>
         <port>6514</port>
         <facility>LOCAL0</facility> <!-- See: https://en.wikipedia.org/wiki/Syslog#Facility -->
-        <suffixPattern>%thread: %-5level %logger{36} - %msg%n</suffixPattern>
+        <suffixPattern>%thread: %-5level %logger{36} %X{service} %X{tenant} - %msg%n</suffixPattern>
     </appender>
 
     <root level="INFO">

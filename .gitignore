@@ -12,3 +12,4 @@ buildNumber.properties
 
 # ignore logs written by rsyslog
 scripts/rsyslog/log/
+gh-md-toc 
