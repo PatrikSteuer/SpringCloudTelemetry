@@ -14,6 +14,8 @@ A repository showing Spring Cloud capabilities for Cloud Telemetry.
    * [Spring Boot Configurations](#spring-boot-configurations)
       * [... for Tracing](#-for-tracing)
       * [... for Metrics](#-for-metrics)
+      * [... for Distributed Logging](#-for-distributed-logging)
+      * [Context-Enhanced Log Messages](#context-enhanced-log-messages)
    * [References](#references)
 
 The repository includes:
