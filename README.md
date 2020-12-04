@@ -6,6 +6,7 @@ A repository showing Spring Cloud capabilities for Cloud Telemetry.
    * [Running the Project](#running-the-project)
    * [Tracing](#tracing)
    * [Metrics](#metrics)
+   * [Distributed Logs](#distributed-logs)
       * [Inspecting Influx DB](#inspecting-influx-db)
       * [Using Chronograf &amp; Grafana](#using-chronograf--grafana)
          * [Chronograf](#chronograf)
