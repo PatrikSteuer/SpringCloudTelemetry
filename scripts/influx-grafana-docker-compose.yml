@@ -33,8 +33,8 @@ services:
     ports:
       - '3000:3000'
     volumes:
-      # - grafana-storage:/var/lib/grafana
-      - ./grafana-provisioning:/etc/grafana/provisioning
+      #- ./grafana/storage:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
     depends_on:
       - influxdb
     environment:
@@ -42,7 +42,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
 
   rsyslog:
-    image: rsyslog/syslog_appliance_alpine
+    image: rsyslog/syslog_appliance_alpine:latest
     ports:
       - "6514:514/tcp"
       - "6514:514/udp"
@@ -55,12 +55,23 @@ services:
     restart: always
   
   telegraf:
-    image: telegraf
+    image: telegraf:latest
     ports:
       - "7777:7777/tcp"
     volumes:
       # - ./rsyslog/rsyslog.conf:/etc/rsyslog.conf # uncomment if you want to configure rsyslog inside the container with a file outside of the container.
       - ./telegraf/config/telegraf.conf:/etc/telegraf/telegraf.conf
+    depends_on:
+      - influxdb
+    restart: always
+
+  fluentbit:
+    image: fluent/fluent-bit:1.6.8
+    ports:
+      - "6666:6666/tcp"
+    volumes:
+      # - ./rsyslog/rsyslog.conf:/etc/rsyslog.conf # uncomment if you want to configure rsyslog inside the container with a file outside of the container.
+      - ./fluentbit/config/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
     depends_on:
       - influxdb
     restart: always

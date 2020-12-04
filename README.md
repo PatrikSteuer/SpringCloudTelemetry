@@ -86,6 +86,21 @@ With the services and Docker images up and running, let's create more data.
 
 This will generate 12 REST request and 12 `Person` instances being created (never mind that their names are duplicates).
 
+# Distributed Logs
+
+If you have executed the steps described in the sections above, you will also have written logs already.
+
+The services used in this setup use Slf4j and Logback Classic as their logging stack. By default, Spring Boot configures this stack with a few meaningful defaults, e.g. a log appender for console logs. That's why you see log output on the command line when you are starting up the services.
+
+We have added an additional log appender to the log stack, which is provided by Logback Classic's `ch.qos.logback.classic.net.SyslogAppender`. This appender writes logs in the [syslog format](https://en.wikipedia.org/wiki/Syslog) which is understood by a large variety of tools and log sinks.
+
+The appender formats any logs written by the application and sends them to a TCP port, where a log aggregator listens for incoming logs. The log aggregator collects several log statments and sends them as batches to a log sink in periodic intervals.
+
+Several log aggregators exist, such as [rsyslog](https://www.rsyslog.com/) or [fluent-bit](https://fluentbit.io/) and [fluentd](https://www.fluentd.org/). If you are using InfluxDB (like we do in this sample) you might also stumble upon [telegraf](https://www.influxdata.com/time-series-platform/telegraf/) which can also act as a log aggregator. However, [fluent-bit](https://fluentbit.io/) and [fluentd](https://www.fluentd.org/) are currently perceived to be thee most open and least opinionated solutions.
+
+Once the log aggregator has sent the logs to the sink (e.g. an InfluxDB), a UI on top of the sink can be used to display them.
+
+This allows for a distributed logging model, where the production of logs, their transmission, their storage and their consumption are cleanly separated and can be achieved with tools that are interchangeable.
 ## Inspecting Influx DB
 
 Let's look at our InfluxDB to see, if the metrics arrived:
@@ -132,7 +147,6 @@ You can add your own measurements, if you like. An example that describes how to
 
 Looking at a database is not fun, so let's look at Chronograf & Grafana instead to plot the timeseries in a human-consumable fashion.
 ## Using Chronograf & Grafana
-
 ### Chronograf
 
 Chronograf is InfluxDB's admin UI, but it also includes dashboard capabilities. Grafana is an open dashboarding solution which not only works with InfluxDB but many other solutions, too.
@@ -172,6 +186,13 @@ It will take approx. 20s until you will see the chart displaying a spike! What y
 Go ahead, create more charts, plot different metrics and create and save your own dashboards.
 It's all there - made possible for you by Spring Boot.
 
+Finally, to show the distributed logs that were collected from the 3 different services, you can proceed as follows.
+
+1. In the Chronograf UI find the *Log Viewer* menu entry and click it.
+2. As a result you will see the logs that have been written by the Spring Boot services, collected via the log aggregator and sent to InfluxDB.
+
+![chronograf-logs](./.documentation/chronograf-logs.png)
+
 ### Grafana
 
 Grafana is an open dashboard solution that not only works with InfluxDB but a variety of other timeseries databases, e.g. Prometheus.
@@ -210,6 +231,28 @@ And see how the chart updates.
 
 ![grafana-dashboard](./.documentation/grafana-dashboard.png)
 
+Finally logs can also be visualized in Grafana:
+
+1. A data source named `InfluxDB-Logs` that points towards a different database in InfluxDB where logs are written is already set up. You can see it in the *Configurations > Data Sources* menu on the left.
+2. Create a dashboard from the menu on the left by hitting the `+` entry and selecting *Dashboard*.
+3. Click on *Add new panel*
+4. On the right under *Panel* expand the *Visualization* entry.
+5. Select *Logs* from the list of possible visualizations.
+6. In the opening dialog window, find the query editor at the lower half of the window.
+7. Select InfluxDB-Logs from the drop down list.
+8. Click the *select measurement* button and choose *syslog*.
+9. Find the *field(value)* button in the row for the `SELECT` statement, click it and select *message*.
+10. Find the *mean()* button next to it, click it and select *Remove* (we don't want the mean count of requests but the actual count values)
+11. Click on the `+` button where the *mean()* button used to be, and select *Aggregtations > distinct*.
+12. Under `FORMAT AS` select *Logs*
+13. Finally, click the *Apply* button at the top right of the window.
+
+The result will look similar to this:
+
+![grafana-logs](./.documentation/grafana-logs.png)
+
+❗Note: We have created a sample dashboard called *Spring Boot* which shows the results of the manual steps described above. You can find it in the *Dashboards* menu entry (on the left) under *Manage*.
+Simply click it to open the dashboard.
 # Spring Boot Configurations
 ## ... for Tracing
 

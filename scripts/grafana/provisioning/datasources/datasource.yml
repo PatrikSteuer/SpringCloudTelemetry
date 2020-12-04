@@ -9,3 +9,14 @@ datasources:
     url: http://influxdb:8086
     isDefault: true
     editable: true
+
+  - name: InfluxDB-Logs
+    type: influxdb
+    access: proxy
+    database: telegraf
+    user: admin
+    password: admin
+    url: http://influxdb:8086
+    isDefault: false
+    editable: true
+
