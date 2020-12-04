@@ -436,9 +436,17 @@ public class LogEnhancerFilter implements Filter {
 
 This filter - although primitive in this sample - is called whenever an HTTP request is received by the Spring Boot stack. As a result, the [SLF4J Mapped Diagnostic Context (MDC)](http://logback.qos.ch/manual/mdc.html) is filled with information for `service` and `tenant`. Of course in a real-life scenario, this would data dynamically inferred from the request.
 
-That MDC data is available to every log appender, and can be looked at as a `ThreadLocal` context.
-It is the perfect fit to convey instance and tenant information or other custom tags via the log messages written by the appliction. These tags can be used for filtering by tools like InfluxDB, fluent-bit and fluentd and allows for a fine-grained instance or tenant-based analysis of logs.
+As a result, you will see the following information in log output sent to InfluxDB when you send an HTTP request to `service-a`, e.g. by calling `./scripts/createPerson.sh`:
 
+```
+	2020-12-04 21:53:54	
+INFO org.mongodb.driver.connection Service-B SomeTenantID - Opened connection [connectionId{localValue:2, serverValue:64}] to localhost:27017
+```
+
+Notice the `Service-B` and `SomeTenantID` fields in the logs.
+
+That MDC data is available to every log appender, and acts like a `ThreadLocal` context.
+It is the perfect fit to convey instance and tenant information or other custom tags via log messages written by the appliction. These tags can be used for filtering by tools like InfluxDB, fluent-bit and fluentd and allow for a fine-grained instance or tenant-specific display and analysis of distributed logs.
 # References
 
 * [Micrometer: Spring Boot 2's new application metrics collector](https://spring.io/blog/2018/03/16/micrometer-spring-boot-2-s-new-application-metrics-collector)
