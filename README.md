@@ -252,8 +252,8 @@ The result will look similar to this:
 
 ![grafana-logs](./.documentation/grafana-logs.png)
 
-❗Note: We have created a sample dashboard called *Spring Boot* which shows the results of the manual steps described above. You can find it in the *Dashboards* menu entry (on the left) under *Manage*.
-Simply click it to open the dashboard.
+> ❗Note: We have created a sample dashboard called *Spring Boot* which shows the results of the manual steps described above. You can find it in the *Dashboards* menu entry (on the left) under *Manage*.
+> Simply click it to open the dashboard.
 # Spring Boot Configurations
 ## ... for Tracing
 
@@ -330,6 +330,115 @@ The `username` and `password` are the credentials used to authenticate to Influx
 Also note the `management.metrics.tags` property map. Here you can define additional tags that will be added to the metrics that are being produced. In our case, we add a `service` tag which holds the name of the service (Spring Boot application name) that created the metrics. That allows us to filter in Chronograf or Grafana by the service instances. 
 
 There are many more settings that are noteworthy. For details, please consult the [Actuator Metrics documeentation](https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-metrics)
+
+## ... for Distributed Logging
+
+To support distributed logging with Spring Boot you don't need any extra libraries. Rather, the idea is as follows:
+
+1. The application writes logs in a specific format to a specific location - this can be a file on the hard disk or a TCP or UDP port. 
+2. A log aggregator and / or forwarder picks up the logs written by the application and batches them up before sending them to a log sink. Often, these aggregators come with a plugin architecture and allow multiple log inputs (sources) and outputs (sinks), as well as filters that can be applied before logs are fowarded.
+3. A log sink receives the logs and stores them. Examples can be an InfluxDB, an Amazon S3, a Splunk instance or simply another TCP port.
+
+In our specific case, we will create logs in the [syslog](https://en.wikipedia.org/wiki/Syslog) format, write them to [rsyslog](https://www.rsyslog.com/) as the log aggregator forward it to [telegraf](https://www.influxdata.com/time-series-platform/telegraf/) which then uploads logs to InfluxDB.
+
+Spring Boot uses [Slf4J](http://www.slf4j.org/) by default, as the logging API that applications (and the Spring Boot stack) log messages with. Slf4J is an API, its most prominent *implementation* is [Logback Classic](http://logback.qos.ch/). We use Logback's `ch.qos.logback.classic.net.SyslogAppender` to write logs to `rsyslog`.
+To do so, we add the following `logback.xml` to the `src/main/resources` folder:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
+    
+    <appender name="RSYSLOG" class="ch.qos.logback.classic.net.SyslogAppender">
+        <syslogHost>127.0.0.1</syslogHost>
+        <port>6514</port>
+        <facility>LOCAL0</facility> <!-- See: https://en.wikipedia.org/wiki/Syslog#Facility -->
+        <suffixPattern>%thread: %-5level %logger{36} %X{service} %X{tenant} - %msg%n</suffixPattern>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="RSYSLOG"/>
+    </root>
+</configuration>
+```
+This includes the Spring Boot default log configurations and adds another appender - the `RSYSLOG` appender - to the root logger of Spring Boot. The appender writes logs to `127.0.0.1:6514` and defines a suffix pattern used for formatting the log message.
+
+More details on how to configure Spring Boot logging can be found [here](https://docs.spring.io/spring-boot/docs/current/reference/html/howto.html#howto-logging).
+
+`rsyslog`, on the other hand, is started as a docker container (as configured in `scripts/influx-grafana-docker-compose.yml`) and runs on port `6514` - exactly where the log appender is writing the logs to. The configurations for `rsyslog` are contained in `scripts/rsyslog/config/rsyslog.conf` which contains the following line:
+
+```shell
+action(type="omfwd" Protocol="tcp" TCP_Framing="octet-counted" Target="telegraf" Port="7777" Template="RSYSLOG_SyslogProtocol23Format")
+```
+
+This configures `rsyslog` to forward any logs received to `telegraf`, which is listening on port `7777` for input.
+
+Telegraf itself is also started as a docker container (also configured in `scripts/influx-grafana-docker-compose.yml`) and its configurarions are in `scripts/telegraf/config/telegraf.conf`. Here you can also change the interval at which logs are being sent to InfluxDb.
+
+With that setup, all an application needs to do is log messages - and eventually they will end up in InfluxDb for display and processing.
+
+> ❗Note: Depending on the Cloud infrastructure you run in, a log aggregator might already be configured and forwarding log messages to an appropriate sink. All you need to find out then, is how to input logs to it.
+> Chances are high, that all you need to do is add a log appender, like we did in this sample, and configuring it properly to achieve seamless integration into the specific Cloud's logging infrastructure. Please consult your Cloud provider of choice for details on how to do that.
+
+## Context-Enhanced Log Messages
+
+Attentive readers may have noticed a specialty in the `suffixPattern` of the log appender presented in the previous section.
+
+Indeed, there we configured the following pattern in `logback.xml`:
+
+```xml
+<appender name="RSYSLOG" class="ch.qos.logback.classic.net.SyslogAppender">
+    ...
+    <suffixPattern>%thread: %-5level %logger{36} %X{service} %X{tenant} - %msg%n</suffixPattern>
+</appender>
+```
+
+Notice the `%X{service}` and `%X{tenant}` parts. These add custom context information about the specific service instance (`a`/`b`/`c`) and the calling tenant to the written logs.
+
+This information is provided by a special `Filter` that is added as an HTTP request interceptor to Spring Boot's filter chain:
+
+```java
+package com.equalities.cloud.service;
+import org.slf4j.MDC;
+import org.springframework.stereotype.Component;
+
+import javax.servlet.*;
+import java.io.IOException;
+
+/**
+ * A class showing the use of Slf4J's Mapped Diagnostic Context
+ * to enhance logs written by an application with context-specific
+ * information. This can be static information about the service itself, e.g.
+ * to be able to filter logs later by service ID, or dynamic information
+ * like a tenant ID.
+ */
+@Component
+public class LogEnhancerFilter implements Filter {
+
+    @Override
+    public void destroy() {
+    }
+    
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+    }
+
+    @Override
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+        MDC.put("service", "Service-C");
+        MDC.put("tenant", "SomeTenantID");
+        filterChain.doFilter(servletRequest, servletResponse);
+    }
+}
+```
+
+This filter - although primitive in this sample - is called whenever an HTTP request is received by the Spring Boot stack. As a result, the [SLF4J Mapped Diagnostic Context (MDC)](http://logback.qos.ch/manual/mdc.html) is filled with information for `service` and `tenant`. Of course in a real-life scenario, this would data dynamically inferred from the request.
+
+That MDC data is available to every log appender, and can be looked at as a `ThreadLocal` context.
+It is the perfect fit to convey instance and tenant information or other custom tags via the log messages written by the appliction. These tags can be used for filtering by tools like InfluxDB, fluent-bit and fluentd and allows for a fine-grained instance or tenant-based analysis of logs.
+
 # References
 
 * [Micrometer: Spring Boot 2's new application metrics collector](https://spring.io/blog/2018/03/16/micrometer-spring-boot-2-s-new-application-metrics-collector)
