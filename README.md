@@ -1,4 +1,4 @@
-# SpringCloudTelemetry
+# Spring Cloud Telemetry
 
 A repository showing Spring Cloud capabilities for Cloud Telemetry.
 
@@ -7,10 +7,10 @@ A repository showing Spring Cloud capabilities for Cloud Telemetry.
    * [Tracing](#tracing)
    * [Metrics](#metrics)
    * [Distributed Logs](#distributed-logs)
-      * [Inspecting Influx DB](#inspecting-influx-db)
-      * [Using Chronograf &amp; Grafana](#using-chronograf--grafana)
-         * [Chronograf](#chronograf)
-         * [Grafana](#grafana)
+   * [Inspecting Influx DB](#inspecting-influx-db)
+   * [Using Chronograf &amp; Grafana](#using-chronograf--grafana)
+      * [Chronograf](#chronograf)
+      * [Grafana](#grafana)
    * [Spring Boot Configurations](#spring-boot-configurations)
       * [... for Tracing](#-for-tracing)
       * [... for Metrics](#-for-metrics)
@@ -104,9 +104,9 @@ Several log aggregators exist, such as [rsyslog](https://www.rsyslog.com/) or [f
 Once the log aggregator has sent the logs to the sink (e.g. an InfluxDB), a UI on top of the sink can be used to display them.
 
 This allows for a distributed logging model, where the production of logs, their transmission, their storage and their consumption are cleanly separated and can be achieved with tools that are interchangeable.
-## Inspecting Influx DB
+# Inspecting Influx DB
 
-Let's look at our InfluxDB to see, if the metrics arrived:
+Let's look at our InfluxDB to see, if the metrics and logs arrived:
 
 ```shell
 # Lists your docker containers. There should be one
@@ -130,6 +130,7 @@ name
 ----
 db0
 _internal
+telegraf
 spring-boot-metrics
 ```
 
@@ -149,8 +150,8 @@ Have a look at the measurement types! The include JVM statistics (e.g. classes l
 You can add your own measurements, if you like. An example that describes how to do that can be found [here](https://www.mokkapps.de/blog/monitoring-spring-boot-application-with-micrometer-prometheus-and-grafana-using-custom-metrics/) and [here](https://www.baeldung.com/micrometer). More information on Micrometer integration into Spring Boot can be found [here](https://spring.io/blog/2018/03/16/micrometer-spring-boot-2-s-new-application-metrics-collector).
 
 Looking at a database is not fun, so let's look at Chronograf & Grafana instead to plot the timeseries in a human-consumable fashion.
-## Using Chronograf & Grafana
-### Chronograf
+# Using Chronograf & Grafana
+## Chronograf
 
 Chronograf is InfluxDB's admin UI, but it also includes dashboard capabilities. Grafana is an open dashboarding solution which not only works with InfluxDB but many other solutions, too.
 
@@ -196,7 +197,7 @@ Finally, to show the distributed logs that were collected from the 3 different s
 
 ![chronograf-logs](./.documentation/chronograf-logs.png)
 
-### Grafana
+## Grafana
 
 Grafana is an open dashboard solution that not only works with InfluxDB but a variety of other timeseries databases, e.g. Prometheus.
 
@@ -436,7 +437,7 @@ public class LogEnhancerFilter implements Filter {
 }
 ```
 
-This filter - although primitive in this sample - is called whenever an HTTP request is received by the Spring Boot stack. As a result, the [SLF4J Mapped Diagnostic Context (MDC)](http://logback.qos.ch/manual/mdc.html) is filled with information for `service` and `tenant`. Of course in a real-life scenario, this would data dynamically inferred from the request.
+This filter - although primitive in this sample - is called whenever an HTTP request is received by the Spring Boot stack. As a result, the [SLF4J Mapped Diagnostic Context (MDC)](http://logback.qos.ch/manual/mdc.html) is filled with information for `service` and `tenant`. Of course in a real-life scenario, this would be data dynamically inferred from the request.
 
 As a result, you will see the following information in log output sent to InfluxDB when you send an HTTP request to `service-a`, e.g. by calling `./scripts/createPerson.sh`:
 
