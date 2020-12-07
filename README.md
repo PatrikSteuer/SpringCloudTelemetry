@@ -370,7 +370,7 @@ This includes the Spring Boot default log configurations and adds another append
 
 More details on how to configure Spring Boot logging can be found [here](https://docs.spring.io/spring-boot/docs/current/reference/html/howto.html#howto-logging).
 
-`rsyslog`, on the other hand, is started as a docker container (as configured in `scripts/influx-grafana-docker-compose.yml`) and runs on port `6514` - exactly where the log appender is writing the logs to. The configurations for `rsyslog` are contained in `scripts/rsyslog/config/rsyslog.conf` which contains the following line:
+`rsyslog`, on the other hand, is started as a docker container (as configured in `scripts/influx-grafana-docker-compose.yml`) and runs on port `6514` - exactly where the log appender is writing the logs to. The configurations for `rsyslog` are contained in `scripts/rsyslog/config/rsyslog.conf` (and `scripts/rsyslog/config/container_config`) which contains the following line:
 
 ```shell
 action(type="omfwd" Protocol="tcp" TCP_Framing="octet-counted" Target="telegraf" Port="7777" Template="RSYSLOG_SyslogProtocol23Format")
@@ -450,6 +450,114 @@ Notice the `Service-B` and `SomeTenantID` fields in the logs.
 
 That MDC data is available to every log appender, and acts like a `ThreadLocal` context.
 It is the perfect fit to convey instance and tenant information or other custom tags via log messages written by the appliction. These tags can be used for filtering by tools like InfluxDB, fluent-bit and fluentd and allow for a fine-grained instance or tenant-specific display and analysis of distributed logs.
+
+# Appendix A: rsyslog & telegraf configurations
+
+The distributed logging setup described above relies on the `rsyslog` and `telegraf` tools.  
+Both are started as docker containers and the relevant configurations are described here.
+
+## Rsyslog Docker Configurations
+
+In `influx-grafana-docker-compose.yml` the following sections are relevant:
+
+```yaml
+  ## Run rsyslog as docker container ##
+  rsyslog:
+    image: rsyslog/syslog_appliance_alpine:latest
+    ports:
+      - "6514:514/tcp"  # expose rsyslog TCP port 514 to local docker host port 6514
+      - "6514:514/udp"  # expose rsyslog UDP port 514 to local docker host port 6514
+    volumes:
+      - ./rsyslog/config:/config # create a local folder for rsyslog configs that is mapped into the container.
+      - ./rsyslog/log:/logs      # create a local folder for rsyslog logs that is mapped into the container. Allows log inspection from the docker host more easily.
+    depends_on:
+      - influxdb    # make sure InfluxDB is up an running before rsyslog is started.
+      - telegraf    # make sure telegraf is up an running before rsyslog is started, since rsyslog connects to telegraf.
+    restart: always
+```
+
+Rsyslog is configured partially via `./scripts/rsyslog/config/container_config` and `./scripts/rsyslog/config/rsyslog.conf`. The `container_config` exposes a few environment variables which are read by the container at startup and will be picked up by the configurations given in `rsyslog.conf`. This could also be done entirely in `rsyslog.conf` if you know what you are doing.
+
+The `container_config`, however, does not allow us to add additional configuration statements. Hence `rsyslog.conf` is needed as well, which contains the following additional statement:
+
+```shell
+action(type="omfwd" Protocol="tcp" TCP_Framing="octet-counted" Target="telegraf" Port="7777" Template="RSYSLOG_SyslogProtocol23Format")
+```
+
+> Note: there is also a `droprules.conf` for `rsyslog`. This can be used to drop logs based on specific rules. See the `rsyslog` documentation for details.
+
+## Telegraf Docker Configurations
+
+In `influx-grafana-docker-compose.yml` the following sections are relevant:
+
+```yaml
+  ## Run Telegraf as docker container ##
+  telegraf:
+    image: telegraf:latest
+    ports:
+      - "7777:7777/tcp" # expose TCP port 7777 to local docker host. The port is configured in telegraf/config/telegraf.conf
+    volumes:
+      - ./telegraf/config/telegraf.conf:/etc/telegraf/telegraf.conf  # map telegraf configurations into the container.
+    depends_on:
+      - influxdb  # make sure InfluxDB is started before telegraf is. Telegraf will connect and create a dedicated database ('telegraf') for logs.
+    restart: always
+```
+
+To configure `telegraf` itself, you need to change `./scripts/telegraf/config/telegraf.conf`.
+
+In that file, the following sections and settings are most relevant in our scenario:
+
+```yaml
+[agent]
+  ## Default data collection interval for all inputs
+  interval = "10s"
+
+  ## Telegraf will send metrics to outputs in batches of at most
+  ## metric_batch_size metrics.
+  ## This controls the size of writes that Telegraf sends to output plugins.
+  metric_batch_size = 10
+
+  ## Maximum number of unwritten metrics per output.  Increasing this value
+  ## allows for longer periods of output downtime without dropping metrics at the
+  ## cost of higher maximum memory usage.
+  metric_buffer_limit = 10000
+```
+With these, you can control the interval used to send batched logs to InfluxDB. Also the batch size can be configured and how much will be buffered locally (before logs are being dropped) in case InfluxDB is temporarily unavailable.
+
+In the outputs section of `telegraf.conf` you find:
+
+```yaml
+[[outputs.influxdb]]
+  ## The full HTTP or UDP URL for your InfluxDB instance.
+  ##
+  ## Multiple URLs can be specified for a single cluster, only ONE of the
+  ## urls will be written to each interval.
+  # urls = ["unix:///var/run/influxdb.sock"]
+  # urls = ["udp://127.0.0.1:8089"]
+  urls = ["http://influxdb:8086"]
+
+  ## If true, no CREATE DATABASE queries will be sent.  Set to true when using
+  ## Telegraf with a user without permissions to create databases or when the
+  ## database already exists.
+  skip_database_creation = false
+```
+This tells telegraf to send logs to InfluxDB. Note that the URL (`http://influxdb:8086`) uses the hostname of InfluxDB on the Docker network. Since both `telegraf` and InfluxDB are started as part of the same `docker-compose` file, they are part of the same network and can reference each other by their DNS names.
+
+Note also that `skip_database_creation` is explicitly set to `false` to force `telegraf` to create a dedicated database in InfluxDB to send logs to. That database is used by Grafana and Chronograf to read and display logs from.
+
+Finally, in the inputs section of `telegraf.conf` you find:
+
+```yaml
+[[inputs.syslog]]
+  ## Specify an ip or hostname with port - eg., tcp://localhost:6514, tcp://10.0.0.1:6514
+  ## Protocol, address and port to host the syslog receiver.
+  ## If no host is specified, then localhost is used.
+  ## If no port is specified, 6514 is used (RFC5425#section-4.1).
+  server = "tcp://telegraf:7777"
+```
+
+Here, we tell `telegraf` to expose a TCP endpoint that accepts `syslog`-formatted logs as inputs. `telegraf` will batch up those logs and forward them to InfluxDB. If you change the port here, make sure to also change it in `influx-grafana-docker-compose.yml`.
+
 # References
 
 * [Micrometer: Spring Boot 2's new application metrics collector](https://spring.io/blog/2018/03/16/micrometer-spring-boot-2-s-new-application-metrics-collector)
@@ -465,3 +573,5 @@ It is the perfect fit to convey instance and tenant information or other custom 
 * [Spring Boot Logging - Colour-coded Output](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-logging-color-coded-output)
 * [Get Your Syslog On - Logging to InfluxDB with rsyslog and telegraf](https://www.influxdata.com/blog/get-your-syslog-on/)
 * [Syslog Plugin Telegraf](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/syslog)
+* [Spring Boot + SLF4J: Enhance the Application logging with SLF4J Mapped Diagnostic Context](https://springbootdev.com/2018/02/05/spring-boot-slf4j-enhance-the-application-logging-with-slf4j-mapped-diagnostic-context-mdc/)
+* [Logback: Mapped Diagnostic Context](http://logback.qos.ch/manual/mdc.html)
