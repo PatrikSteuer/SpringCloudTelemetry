@@ -16,6 +16,9 @@ A repository showing Spring Cloud capabilities for Cloud Telemetry.
       * [... for Metrics](#-for-metrics)
       * [... for Distributed Logging](#-for-distributed-logging)
       * [Context-Enhanced Log Messages](#context-enhanced-log-messages)
+   * [Appendix A: rsyslog &amp; telegraf configurations](#appendix-a-rsyslog--telegraf-configurations)
+      * [Rsyslog Docker Configurations](#rsyslog-docker-configurations)
+      * [Telegraf Docker Configurations](#telegraf-docker-configurations)
    * [References](#references)
 
 The repository includes:
