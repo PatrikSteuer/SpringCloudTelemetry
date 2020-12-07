@@ -65,17 +65,6 @@ services:
       - influxdb
     restart: always
 
-  fluentbit:
-    image: fluent/fluent-bit:1.6.8
-    ports:
-      - "6666:6666/tcp"
-    volumes:
-      # - ./rsyslog/rsyslog.conf:/etc/rsyslog.conf # uncomment if you want to configure rsyslog inside the container with a file outside of the container.
-      - ./fluentbit/config/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
-    depends_on:
-      - influxdb
-    restart: always
-
 # Use these volumes and uncomment the volumes above,
 # if you want data to persist beyond the shutdown and 
 # restart of the services.
