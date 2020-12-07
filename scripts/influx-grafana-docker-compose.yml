@@ -41,30 +41,6 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
 
-  rsyslog:
-    image: rsyslog/syslog_appliance_alpine:latest
-    ports:
-      - "6514:514/tcp"
-      - "6514:514/udp"
-    volumes:
-      - ./rsyslog/config:/config
-      - ./rsyslog/log:/logs
-    depends_on:
-      - influxdb
-      - telegraf
-    restart: always
-  
-  telegraf:
-    image: telegraf:latest
-    ports:
-      - "7777:7777/tcp"
-    volumes:
-      # - ./rsyslog/rsyslog.conf:/etc/rsyslog.conf # uncomment if you want to configure rsyslog inside the container with a file outside of the container.
-      - ./telegraf/config/telegraf.conf:/etc/telegraf/telegraf.conf
-    depends_on:
-      - influxdb
-    restart: always
-
   fluentbit:
     image: fluent/fluent-bit:1.6.8
     ports:
