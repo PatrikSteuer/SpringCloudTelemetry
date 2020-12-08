@@ -454,6 +454,8 @@ Notice the `Service-B` and `SomeTenantID` fields in the logs.
 That MDC data is available to every log appender, and acts like a `ThreadLocal` context.
 It is the perfect fit to convey instance and tenant information or other custom tags via log messages written by the appliction. These tags can be used for filtering by tools like InfluxDB, fluent-bit and fluentd and allow for a fine-grained instance or tenant-specific display and analysis of distributed logs.
 
+>❗Note: there is also a [SiftingAppender](http://logback.qos.ch/manual/appenders.html#SiftingAppender) (class `ch.qos.logback.classic.sift.SiftingAppender`) which can be used to write logs to different destinations depending on the MDC data given in the logs. For example, that allows to write logs for specific users, tenants etc. to specific files.
+> Also note, that the SiftingAppender not only supports files as destinations!
 # Appendix A: rsyslog & telegraf configurations
 
 The distributed logging setup described above relies on the `rsyslog` and `telegraf` tools.  
@@ -578,3 +580,5 @@ Here, we tell `telegraf` to expose a TCP endpoint that accepts `syslog`-formatte
 * [Syslog Plugin Telegraf](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/syslog)
 * [Spring Boot + SLF4J: Enhance the Application logging with SLF4J Mapped Diagnostic Context](https://springbootdev.com/2018/02/05/spring-boot-slf4j-enhance-the-application-logging-with-slf4j-mapped-diagnostic-context-mdc/)
 * [Logback: Mapped Diagnostic Context](http://logback.qos.ch/manual/mdc.html)
+* [Logback: Sifting Appender](http://logback.qos.ch/manual/appenders.html#SiftingAppender)
+* [Logback: Syslog Appender](http://logback.qos.ch/manual/appenders.html#SyslogAppender)
