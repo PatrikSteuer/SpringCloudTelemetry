@@ -578,3 +578,8 @@ Here, we tell `telegraf` to expose a TCP endpoint that accepts `syslog`-formatte
 * [Syslog Plugin Telegraf](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/syslog)
 * [Spring Boot + SLF4J: Enhance the Application logging with SLF4J Mapped Diagnostic Context](https://springbootdev.com/2018/02/05/spring-boot-slf4j-enhance-the-application-logging-with-slf4j-mapped-diagnostic-context-mdc/)
 * [Logback: Mapped Diagnostic Context](http://logback.qos.ch/manual/mdc.html)
+* [fluentd - Docker Hub](https://hub.docker.com/r/fluent/fluentd)
+* [fluentd - Documentation](https://docs.fluentd.org/)
+* [fluent-bit - Docker Hub](https://hub.docker.com/r/fluent/fluent-bit)
+* [fluent-bit - Documentation](https://docs.fluentbit.io/manual/)
+* [Send Syslog Data to InfluxDB with fluent-bit and fluentd](https://docs.fluentd.org/how-to-guides/syslog-influxdb)

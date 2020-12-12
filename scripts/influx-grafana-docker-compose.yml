@@ -9,7 +9,7 @@ services:
     # volumes:
     #   - influxdb-storage:/var/lib/influxdb
     environment:
-      - INFLUXDB_DB=db0
+      - INFLUXDB_DB=logs
       - INFLUXDB_ADMIN_USER=admin
       - INFLUXDB_ADMIN_PASSWORD=admin
 
@@ -42,15 +42,29 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
 
   fluentbit:
-    image: fluent/fluent-bit:1.6.8
+    image: fluent/fluent-bit:1.6.8-debug
     ports:
-      - "6666:6666/tcp"
+      - "6514:6514/udp"
     volumes:
-      # - ./rsyslog/rsyslog.conf:/etc/rsyslog.conf # uncomment if you want to configure rsyslog inside the container with a file outside of the container.
       - ./fluentbit/config/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+      - ./fluentbit/config/plugins.conf:/fluent-bit/etc/plugins.conf
+      - ./fluentbit/config/parsers.conf:/fluent-bit/etc/parsers.conf
     depends_on:
       - influxdb
     restart: always
+
+  # fluentd:
+  #   #image: fluent/fluentd:v1.11.5-1.0
+  #   build:
+  #     context: ./fluentd
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "24224:24224"
+  #   volumes:
+  #     - ./fluentd/config/fluent.conf:/fluentd/etc/fluent.conf
+  #   depends_on:
+  #     - influxdb
+  #   restart: always
 
 # Use these volumes and uncomment the volumes above,
 # if you want data to persist beyond the shutdown and 
