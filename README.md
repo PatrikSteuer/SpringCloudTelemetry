@@ -17,7 +17,7 @@ A repository showing Spring Cloud capabilities for Cloud Telemetry.
 
 The repository includes:
 
-* Tracing - using [Spring Cloud Sleuth](https://spring.io/projects/spring-cloud-sleuth) and [Zipkin.io](https://zipkin.io/), but other backends (like Jaeger) are possible, too.
+* Tracing - using [OpenTracing](https://https://opentracing.io/) and [Jaeger](https://https://www.jaegertracing.io//), but other backends are possible, too.
 * Metrics - using [Micrometer.io](https://micrometer.io/docs) and [InfluxDB](https://www.influxdata.com/) ass metrics backend.
 * Distributed Logs - using a distributed logs backend.
 
@@ -39,7 +39,7 @@ To run the project, you need to start a few services using Docker first. Make su
 
 From the project root, execute:
 1. `./scripts/startMongoDb.sh` - starts a local MongoDB image and an image of Mongo Express, a browser-based admin UI available under [http://localhost:8081](http://localhost:8081).
-2. `./scripts/startZipkin.sh` - starts Zipkin tracing server locally on [http://localhost:9411](http://localhost:9411)
+2. `./scripts/startJaeger.sh` - starts Jaeger tracing server locally on [http://localhost:9411](http://localhost:16686)
 3. `./scripts/startInfluxGrafana.sh` - starts InfluxDB, Chronograf (its admin and dashboard UI) and Grafana (for more dashboards). InfluxDB will be the sink of metrics information gathered by Spring Boot via [Micrometer.io](https://micrometer.io/docs).  
    Once up and running, InfluxDB is available on [http://localhost:8086](http://localhost:8086) or `http://influxdb:8086` from within the Docker network.  
    Chronograf will be available at [http://localhost:8888](http://localhost:8888).  
@@ -67,9 +67,11 @@ The person will be propagated (replicated) into `service-b` from where it will b
 As a result, you will see the following:
 1. Log output is generated in all 3 services indicating that the request was received, the `Person` persisted and replicated on to the next service.
 2. If you log on to your [local Mongo Express](http://localhost:8081/db/test/) in the `test` database you will see 3 collections have been created. Each one is holding the `Person` representation of its respective service.
-3. If you log on to your [local Zipkin](http://localhost:9411) instance, you will be able to see the traces. All you need to do is press the *Run  Query* button, and you will see traces of requests between the services. Click on any of them, to drill down deeper!
+3. If you log on to your [local Jaeger](http://localhost:16686) instance, you will be able to see the traces. All you need to do is press the *Run  Query* button, and you will see traces of requests between the services. Click on any of them, to drill down deeper!
 
-![zipkin](./.documentation/zipkin.png)
+![jaeger](./.documentation/jaeger.png)
+
+The trace context propagation currently works via the jaeger internal trace context propagation. In future we can also use the w3c trace context therefore, to be compatible with other tracing systems.  
 
 Furthermore, you will be able to see metrics, which is explained in the next section.
 
@@ -216,33 +218,21 @@ And see how the chart updates.
 For tracing, all you need is the following dependencies in your `pom.xml`:
 
 ```xml
-<!-- Spring Cloud Sleuth library used by Spring Boot to trace. -->
-<dependency>
-  <groupId>org.springframework.cloud</groupId>
-  <artifactId>spring-cloud-starter-sleuth</artifactId>
-</dependency>
-
-<!-- Spring Cloud Starter for Zipkin as the tracing backend. -->
-<dependency>
-  <groupId>org.springframework.cloud</groupId>
-  <artifactId>spring-cloud-starter-zipkin</artifactId>
-</dependency>
+    <dependency>
+      <groupId>io.opentracing.contrib</groupId>
+      <artifactId>opentracing-spring-jaeger-cloud-starter</artifactId>
+    </dependency>
 ```
 
 Then in your `application.yaml`, you need to configure the tracing sample rate:
 
 ```yaml
-spring:
-  cloud:
-    # Tracing configuations:
-    # Sampler probability should be between 0.0 and 1.0. 
-    # 0.1 is the default, meaning that 10% of requests are 
-    # actually traced. The rest is not, for performance reasons.
-    sleuth:
-      sampler:
-        probability: 0.1 # set this to 1.0 only for testing / debugging!
+opentracing:
+  jaeger:
+    http-sender:
+      url: http://localhost:14268/api/traces
+    enable-w3c-propagation: true
 ```
-Using the `spring.clound.sleuth` configurations you can also specify the URI for the Zipkin or other tracing backends.
 ## ... for Metrics
 
 For metrics, all you need is the following dependencies in your `pom.xml`:

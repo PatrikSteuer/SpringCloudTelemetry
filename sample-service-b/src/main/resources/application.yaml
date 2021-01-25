@@ -24,12 +24,12 @@ management:
         include:
         - "*"
 
+
 spring:
   application:
     name: ServiceB
-  sleuth:
-    propagation:
-      type: W3C
-    otel:
-      config:
-        traceIdRatioBased: 1.0
+opentracing:
+  jaeger:
+    http-sender:
+      url: http://localhost:14268/api/traces
+    enable-w3c-propagation: true

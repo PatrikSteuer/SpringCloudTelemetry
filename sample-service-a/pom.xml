@@ -32,30 +32,10 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.springframework.cloud</groupId>
-      <artifactId>spring-cloud-starter-sleuth</artifactId>
-      <exclusions>
-        <!-- Exclude Brave (the default) -->
-        <exclusion>
-          <groupId>org.springframework.cloud</groupId>
-          <artifactId>spring-cloud-sleuth-brave</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <!-- Add OpenTelemetry tracer -->
-    <dependency>
-      <groupId>org.springframework.cloud</groupId>
-      <artifactId>spring-cloud-sleuth-otel-autoconfigure</artifactId>
-    </dependency>
 
     <dependency>
-      <groupId>org.springframework.cloud</groupId>
-      <artifactId>spring-cloud-sleuth-zipkin</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.opentelemetry</groupId>
-      <artifactId>opentelemetry-exporter-zipkin</artifactId>
+      <groupId>io.opentracing.contrib</groupId>
+      <artifactId>opentracing-spring-jaeger-cloud-starter</artifactId>
     </dependency>
 
     <dependency>
@@ -88,6 +68,5 @@
         </exclusion>
       </exclusions>
     </dependency>
-
   </dependencies>
 </project>
